@@ -11,10 +11,10 @@
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 引入 Babel 用於解析 JSX -->
+    <!-- 引入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- 設定 Import Map 以便直接使用 React 和 Lucide -->
+    <!-- Import Map -->
     <script type="importmap">
     {
         "imports": {
@@ -26,18 +26,11 @@
     </script>
 
     <style>
-        /* 隱藏捲軸但保持功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        body {
-            -webkit-tap-highlight-color: transparent;
-            touch-action: pan-y;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { -webkit-tap-highlight-color: transparent; touch-action: pan-y; }
+        /* 增加點擊區域的視覺回饋 */
+        .tap-active:active { transform: scale(0.98); opacity: 0.8; }
     </style>
 </head>
 <body class="bg-[#FFFBF5]">
@@ -48,10 +41,11 @@
         import { createRoot } from 'react-dom/client';
         import { 
             Plane, Car, MapPin, Utensils, Bed, Calendar, Sun, Cloud, 
-            CloudRain, Ship, Coffee, Camera, Clock, Info, Image as ImageIcon, Wifi 
+            CloudRain, Ship, Coffee, Camera, Clock, Info, Image as ImageIcon, 
+            Wifi, Navigation, ExternalLink, Banknote, Timer, Fuel
         } from 'lucide-react';
 
-        // --- 這裡開始是 App 的邏輯 ---
+        // --- 資料設定區 ---
 
         const weatherData = {
             1: { temp: '6°C - 11°C', condition: 'sunny', desc: '晴朗，海風稍大 (歷史平均)' },
@@ -66,6 +60,7 @@
 
         const getWikiImage = (filename) => `https://commons.wikimedia.org/wiki/Special:FilePath/${filename}`;
 
+        // 行程資料 (包含 Map 連結與交通資訊)
         const itinerary = [
           {
             day: 1,
@@ -73,16 +68,26 @@
             displayDate: '01/15 (四)',
             location: '愛媛松山 -> 尾道',
             lat: 34.4063, lng: 133.1950,
-            summary: '瀨戶內海自駕開始',
+            summary: '瀨戶內海自駕開始：穿越島波海道',
             color: 'from-orange-400 to-pink-500',
             schedule: [
               { time: '09:50', type: 'flight', title: '抵達松山機場', sub: 'EVA Air BR 110', icon: Plane, imgUrl: getWikiImage('Matsuyama_Airport_(MYJ)_2.jpg') },
-              { time: '11:00', type: 'transport', title: '取車出發', sub: '檢查車況、設定導航', icon: Car },
-              { time: '12:30', type: 'food', title: '來島海峽 SA', sub: '午餐 & 觀賞來島海峽大橋', img: '來島海峽大橋', imgUrl: getWikiImage('Kurushima-Kaikyo_Bridge_from_Oshima.jpg'), note: '推薦：燒豚玉子飯', icon: Utensils },
-              { time: '15:00', type: 'activity', title: '後藤飲料水工業所', sub: '復古彈珠汽水', img: '後藤飲料', imgUrl: getWikiImage('Ramune_drink.jpg'), icon: Coffee },
-              { time: '16:00', type: 'activity', title: '尾道本通商店街', sub: '貓之細道、散策', img: '尾道商店街', imgUrl: getWikiImage('Onomichi.JPG'), icon: MapPin },
-              { time: '18:30', type: 'food', title: '尾道拉麵', sub: '晚餐', img: '尾道拉麵', imgUrl: getWikiImage('Onomichi_ramen.jpg'), note: '背脂醬油湯底，熱騰騰！', icon: Utensils },
-              { time: '20:00', type: 'hotel', title: 'さくらしまなみホテル尾道駅前', sub: 'Check-in', img: '尾道飯店', imgUrl: getWikiImage('Onomichi_Station_2019.jpg'), icon: Bed },
+              { time: '11:00', type: 'transport', title: 'ORIX Rent-a-car 松山機場店', sub: '取車出發', icon: Car, mapUrl: 'https://maps.app.goo.gl/de2afwf5cNgs9k7Y9' },
+              { 
+                time: '11:30', type: 'move', title: '前往來島海峽', 
+                icon: Car, 
+                transport: { dist: '55km', time: '1小時', cost: '¥2,500 (ETC)' }
+              },
+              { time: '12:30', type: 'food', title: '來島海峽 SA', sub: '午餐 & 觀賞大橋', img: '來島海峽大橋', imgUrl: 'https://duk.tw/hkinyW.jpg', note: '推薦：燒豚玉子飯', icon: Utensils, mapUrl: 'https://maps.app.goo.gl/md3g8vHEFbCmfiUu9' },
+              { 
+                time: '13:30', type: 'move', title: '前往尾道', 
+                icon: Car, 
+                transport: { dist: '40km', time: '45分', cost: '¥2,000 (ETC)' }
+              },
+              { time: '15:00', type: 'activity', title: '後藤飲料水工業所', sub: '復古彈珠汽水', img: '後藤飲料', imgUrl: getWikiImage('Ramune_drink.jpg'), icon: Coffee, mapUrl: 'https://maps.app.goo.gl/81rmPxgdRiQFHST38' },
+              { time: '16:00', type: 'activity', title: '尾道步行街', sub: '貓之細道、散策', img: '尾道商店街', imgUrl: getWikiImage('Onomichi.JPG'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/uig3md6VdNM9rEPm8' },
+              { time: '18:30', type: 'food', title: '尾道拉麵', sub: '晚餐', img: '尾道拉麵', imgUrl: getWikiImage('Onomichi_ramen.jpg'), note: '背脂醬油湯底', icon: Utensils, mapUrl: 'https://maps.app.goo.gl/7nj5J4kvZTcXKGJt9' },
+              { time: '20:00', type: 'hotel', title: 'さくらしまなみホテル', sub: 'Check-in', img: '尾道飯店', imgUrl: 'https://duk.tw/xZGZWI.jpg', icon: Bed, mapUrl: 'https://maps.app.goo.gl/n6zxBe1UCmc9FVTM7' },
             ]
           },
           {
@@ -94,12 +99,15 @@
             summary: '千光寺參拜與廣島之夜',
             color: 'from-blue-400 to-indigo-500',
             schedule: [
-              { time: '09:00', type: 'activity', title: '千光寺公園', sub: '搭乘纜車登頂', img: '千光寺纜車', imgUrl: getWikiImage('Onomichi_from_Senko-ji.jpg'), note: '俯瞰瀨戶內海絕景', icon: Camera },
-              { time: '11:00', type: 'activity', title: '千光寺', sub: '寺廟遊覽、求御守', icon: MapPin },
-              { time: '13:00', type: 'transport', title: '前往廣島市', sub: '車程約 1.5 小時', icon: Car },
-              { time: '15:00', type: 'hotel', title: 'HOTEL MYSTAYS 廣島和平公園前', sub: 'Check-in 放置行李', img: '廣島飯店', imgUrl: getWikiImage('Hiroshima_City_View.jpg'), icon: Bed },
-              { time: '16:30', type: 'activity', title: '廣島本通商店街', sub: '市區逛街購物', img: '廣島本通', imgUrl: getWikiImage('Hondori_Hiroshima.jpg'), icon: MapPin },
-              { time: '19:00', type: 'food', title: '廣島市區晚餐', sub: '自由探索', icon: Utensils },
+              { time: '09:00', type: 'activity', title: '千光寺纜車', sub: '搭乘纜車登頂', img: '千光寺纜車', imgUrl: getWikiImage('Onomichi_from_Senko-ji.jpg'), icon: Camera, mapUrl: 'https://maps.app.goo.gl/zUtW1uCPo2e9Mkb66' },
+              { time: '10:00', type: 'activity', title: '千光寺', sub: '寺廟遊覽', icon: MapPin, mapUrl: 'https://maps.app.goo.gl/naUyQmmophfysFzH8' },
+              { 
+                time: '13:00', type: 'move', title: '前往廣島市', 
+                icon: Car, 
+                transport: { dist: '90km', time: '1小時30分', cost: '¥2,800 (ETC)' }
+              },
+              { time: '15:00', type: 'hotel', title: 'MYSTAYS 廣島和平公園前', sub: 'Check-in 放置行李', img: '廣島飯店', imgUrl: getWikiImage('Hiroshima_City_View.jpg'), icon: Bed, mapUrl: 'https://maps.app.goo.gl/9sVmPPKghe8faGh17' },
+              { time: '16:30', type: 'activity', title: '廣島市區逛街', sub: '本通商店街', img: '廣島本通', imgUrl: getWikiImage('Hondori_Hiroshima.jpg'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/xUxj9JAkKyc3JrkR9' },
             ]
           },
           {
@@ -111,12 +119,13 @@
             summary: '歷史巡禮與廣島燒',
             color: 'from-emerald-500 to-teal-600',
             schedule: [
-              { time: '09:30', type: 'activity', title: '原爆圓頂館', sub: '世界遺產', img: '原爆圓頂館', imgUrl: getWikiImage('Atomic_Bomb_Dome_-_panoramio.jpg'), icon: MapPin },
-              { time: '10:30', type: 'activity', title: '廣島和平紀念公園', sub: '參觀資料館', icon: MapPin },
-              { time: '12:30', type: 'food', title: '長田屋 廣島燒', sub: '人氣排隊名店', img: '長田屋廣島燒', imgUrl: getWikiImage('Okonomiyaki_in_Hiroshima_style_(5808057511).jpg'), note: '大量的蔥與特製醬汁', icon: Utensils },
-              { time: '14:30', type: 'activity', title: '廣島城', sub: '鯉魚城、天守閣', img: '廣島城', imgUrl: getWikiImage('Hiroshima_Castle.jpg'), icon: Camera },
-              { time: '18:00', type: 'food', title: '烤牡蠣小屋', sub: '晚餐', img: '烤牡蠣', imgUrl: getWikiImage('Grilled_oysters_-_Food_in_Miyajima_-_DSC02187.JPG'), note: '廣島名產，鮮美多汁', icon: Utensils },
-              { time: '20:00', type: 'hotel', title: 'HOTEL MYSTAYS 廣島和平公園前', sub: '休息', icon: Bed },
+              { time: '09:30', type: 'activity', title: '原爆圓頂館', sub: '世界遺產', img: '原爆圓頂館', imgUrl: getWikiImage('Atomic_Bomb_Dome_-_panoramio.jpg'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/fM53zx9jzvXPHVQ5A' },
+              { time: '10:30', type: 'activity', title: '廣島和平紀念公園', sub: '參觀資料館', icon: MapPin, mapUrl: 'https://maps.app.goo.gl/41Jj3hGHmx6yt6Vp6' },
+              { time: '13:00', type: 'activity', title: '舊日本銀行廣島分店', sub: '歷史建築', icon: MapPin, mapUrl: 'https://maps.app.goo.gl/TkCjn5BnDC9aCpSAA' },
+              { time: '12:30', type: 'food', title: '長田屋 廣島燒', sub: '人氣排隊名店', img: '長田屋廣島燒', imgUrl: getWikiImage('Okonomiyaki_in_Hiroshima_style_(5808057511).jpg'), note: '大量的蔥與特製醬汁', icon: Utensils, mapUrl: 'https://maps.app.goo.gl/yQwduTUFMPbxqpwFA' },
+              { time: '15:00', type: 'activity', title: '廣島城', sub: '鯉魚城、天守閣', img: '廣島城', imgUrl: getWikiImage('Hiroshima_Castle.jpg'), icon: Camera, mapUrl: 'https://maps.app.goo.gl/Jc9o5HELipPwxiB16' },
+              { time: '18:00', type: 'food', title: '烤牡蠣小屋', sub: '晚餐', img: '烤牡蠣', imgUrl: getWikiImage('Grilled_oysters_-_Food_in_Miyajima_-_DSC02187.JPG'), note: '鮮美多汁', icon: Utensils, mapUrl: 'https://maps.app.goo.gl/iZEWGCwXiFGXhcEx5' },
+              { time: '20:00', type: 'hotel', title: 'MYSTAYS 廣島和平公園前', sub: '休息', icon: Bed, mapUrl: 'https://maps.app.goo.gl/SwCsHmMh6H6iq1AQ6' },
             ]
           },
           {
@@ -128,12 +137,16 @@
             summary: '神之島與海上鳥居',
             color: 'from-red-500 to-orange-500',
             schedule: [
-              { time: '09:30', type: 'transport', title: '前往宮島口', sub: '搭乘渡輪 (人+車)', img: '宮島渡輪', imgUrl: getWikiImage('Miyajima_ferry_(15711785199).jpg'), icon: Ship },
-              { time: '11:00', type: 'activity', title: '嚴島神社', sub: '海上大鳥居', img: '嚴島神社鳥居', imgUrl: getWikiImage('Itsukushima_torii_angle.jpg'), icon: Camera },
-              { time: '12:30', type: 'food', title: '宮島商店街', sub: '午餐', img: '宮島商店街', imgUrl: getWikiImage('Miyajima_Omotesando.jpg'), note: '推薦：炸紅葉饅頭、穴子飯', icon: Utensils },
-              { time: '14:30', type: 'activity', title: '表參道商店街', sub: '散步、買伴手禮', icon: MapPin },
-              { time: '17:30', type: 'hotel', title: '宮島 神撰之宿 Hotel Miya Rikyu', sub: 'Check-in', img: '宮島溫泉飯店', imgUrl: getWikiImage('Miyajima_ryokan.jpg'), note: '享受溫泉與懷石料理', icon: Bed },
-              { time: '18:30', type: 'food', title: '溫泉飯店晚餐', sub: '豪華會席料理', icon: Utensils },
+              { 
+                time: '09:00', type: 'move', title: '前往宮島口', 
+                icon: Car, 
+                transport: { dist: '22km', time: '45分', cost: '一般道路' }
+              },
+              { time: '10:00', type: 'transport', title: '宮島渡輪', sub: '連車一同上船(如需)或停車', icon: Ship, note: '渡輪約10分鐘' },
+              { time: '10:30', type: 'activity', title: '宮島停車場/港口', sub: '抵達宮島', icon: Car, mapUrl: 'https://maps.app.goo.gl/jB88hazAqJdJgDtb8' },
+              { time: '11:00', type: 'activity', title: '宮島表參道商店街', sub: '午餐與散策', img: '宮島商店街', imgUrl: getWikiImage('Miyajima_Omotesando.jpg'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/UW8LPFCRpxuUmGDj8' },
+              { time: '12:30', type: 'food', title: '宮島商店街午餐', sub: '牡蠣、穴子飯', icon: Utensils, mapUrl: 'https://maps.app.goo.gl/PfTa2R2GShEBEvFV7' },
+              { time: '15:00', type: 'hotel', title: '宮島 神撰之宿 Hotel Miya Rikyu', sub: 'Check-in', img: '宮島溫泉飯店', imgUrl: getWikiImage('Miyajima_ryokan.jpg'), note: '享受溫泉與懷石料理', icon: Bed, mapUrl: 'https://maps.app.goo.gl/V2qp3Z5nibtDVFFz9' },
             ]
           },
           {
@@ -145,13 +158,17 @@
             summary: '海軍港口與潛水艇',
             color: 'from-slate-600 to-slate-800',
             schedule: [
-              { time: '09:00', type: 'activity', title: '宮島纜車', sub: '紅葉谷公園站', img: '宮島纜車風景', imgUrl: getWikiImage('Miyajima_View.jpg'), icon: Camera },
-              { time: '13:00', type: 'transport', title: '前往吳市', sub: '車程約 1 小時', icon: Car },
-              { time: '14:00', type: 'food', title: '海軍咖哩', sub: '午餐', img: '海軍咖哩', imgUrl: getWikiImage('Curry_Japanese_Navy_Cookbook_1908.png'), note: '體驗舊日本海軍的味道', icon: Utensils },
-              { time: '15:00', type: 'activity', title: '鐵鯨館', sub: '海上自衛隊吳史料館', img: '鐵鯨館潛水艇', imgUrl: getWikiImage('JMSDF_Kure_Museum.jpg'), note: '可進入真實潛水艇內部', icon: MapPin },
-              { time: '17:00', type: 'activity', title: '吳灣艦船巡遊', sub: '夕陽版導覽', img: '吳市軍艦', imgUrl: getWikiImage('JMSDF_Kure_Base_E_wharf.jpg'), note: '近距離觀看護衛艦', icon: Ship },
-              { time: '19:00', type: 'food', title: '吳市屋台 (赤提燈)', sub: '晚餐', img: '吳市屋台', imgUrl: getWikiImage('Oden_yatai.jpg'), note: '路邊攤氛圍', icon: Utensils },
-              { time: '20:30', type: 'hotel', title: 'Comfort Hotel 吳', sub: 'Check-in', img: '吳市飯店', imgUrl: getWikiImage('Kure_City_View.jpg'), icon: Bed },
+              { time: '09:00', type: 'activity', title: '宮島纜車', sub: '紅葉谷公園站', img: '宮島纜車風景', imgUrl: getWikiImage('Miyajima_View.jpg'), icon: Camera, mapUrl: 'https://maps.app.goo.gl/5GWo8PinVdC7Czmu6' },
+              { 
+                time: '13:00', type: 'move', title: '前往吳市', 
+                icon: Car, 
+                transport: { dist: '35km', time: '50分', cost: '¥1,200 (ETC)' }
+              },
+              { time: '14:00', type: 'food', title: '海軍咖哩', sub: '午餐', img: '海軍咖哩', imgUrl: getWikiImage('Curry_Japanese_Navy_Cookbook_1908.png'), icon: Utensils, mapUrl: 'https://maps.app.goo.gl/4aQSh5mByNnd6jWa9' },
+              { time: '15:00', type: 'activity', title: '潛水艇資料館 (鐵鯨館)', sub: '參觀真實潛水艇', img: '鐵鯨館', imgUrl: getWikiImage('JMSDF_Kure_Museum.jpg'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/Pkwfhu8itWdhfJCDA' },
+              { time: '17:00', type: 'activity', title: '吳灣船艦導覽', sub: '夕陽版巡航', img: '吳市軍艦', imgUrl: getWikiImage('JMSDF_Kure_Base_E_wharf.jpg'), icon: Ship, mapUrl: 'https://maps.app.goo.gl/QhZWnArii7r6Hkkv6' },
+              { time: '19:00', type: 'food', title: '吳市屋台 (赤提燈)', sub: '晚餐', img: '吳市屋台', imgUrl: getWikiImage('Oden_yatai.jpg'), icon: Utensils, mapUrl: 'https://maps.app.goo.gl/AyHPbnDdSw31kb8Z9' },
+              { time: '20:30', type: 'hotel', title: 'Comfort Hotel 吳', sub: 'Check-in', img: '吳市飯店', imgUrl: getWikiImage('Kure_City_View.jpg'), icon: Bed, mapUrl: 'https://maps.app.goo.gl/4RN6j48GqbUT2kMb7' },
             ]
           },
           {
@@ -160,14 +177,22 @@
             displayDate: '01/20 (二)',
             location: '吳市 -> 松山',
             lat: 33.8392, lng: 132.7655,
-            summary: '橫渡瀨戶內海',
+            summary: '橫渡瀨戶內海與購物',
             color: 'from-cyan-500 to-blue-600',
             schedule: [
-              { time: '09:30', type: 'transport', title: '瀨戶內海汽船', sub: '吳港 -> 松山觀光港', img: '瀨戶內海汽船', imgUrl: getWikiImage('Miyajima_Maru_ferry.jpg'), note: '車輛一同上船，約2小時', icon: Ship },
-              { time: '11:30', type: 'food', title: '船上小賣部', sub: '午餐', note: '簡單烏龍麵或便當', icon: Utensils },
-              { time: '13:30', type: 'activity', title: '愛媛縣立砥部動物園', sub: '與白熊和平相處', img: '砥部動物園', imgUrl: getWikiImage('Tobe_zoo2.jpg'), icon: Camera },
-              { time: '18:00', type: 'food', title: '鄉土料理 五志喜', sub: '晚餐：鯛魚細麵', img: '鯛魚細麵', imgUrl: getWikiImage('Somen_001.jpg'), note: '愛媛縣代表性美食', icon: Utensils },
-              { time: '20:00', type: 'hotel', title: '松山大和魯內飯店', sub: 'Check-in', img: '松山大和魯內', imgUrl: getWikiImage('Matsuyama_City_Station.jpg'), icon: Bed },
+              { time: '09:00', type: 'transport', title: '前往吳港碼頭', sub: '準備搭船', icon: Car },
+              { 
+                time: '09:30', type: 'move', title: '瀨戶內海汽船 (吳->松山)', 
+                icon: Ship, img: '瀨戶內海汽船', imgUrl: getWikiImage('Miyajima_Maru_ferry.jpg'), 
+                mapUrl: 'https://setonaikaikisen.co.jp/',
+                transport: { dist: '海路', time: '1小時55分', cost: '車輛約¥8000起 / 人¥3000起' }
+              },
+              { time: '12:00', type: 'activity', title: '愛媛縣立砥部動物園', sub: '與白熊和平相處', img: '砥部動物園', imgUrl: getWikiImage('Tobe_zoo2.jpg'), icon: Camera, mapUrl: 'https://maps.app.goo.gl/jNabnH9uG8qtJs1n6' },
+              { time: '15:00', type: 'activity', title: 'Mont-bell 松山店', sub: '戶外用品採購', icon: MapPin, mapUrl: 'https://maps.app.goo.gl/NxLMmPHMksNZC7dM6' },
+              { time: '16:40', type: 'transport', title: '加油站 (SOLATO)', sub: '還車前加滿油', icon: Fuel, mapUrl: 'https://maps.app.goo.gl/TY62BEYgfgDz3SiV6' },
+              { time: '17:00', type: 'transport', title: 'ORIX Rent-a-car 松山店', sub: '還車', icon: Car, mapUrl: 'https://maps.app.goo.gl/kd8nWcqqUqbBPxHc7', note: '檢查個人物品' },
+              { time: '18:30', type: 'food', title: '元祖 宇和島鯛めし 丸水', sub: '晚餐：鯛魚飯', img: '宇和島鯛魚飯', imgUrl: getWikiImage('Tai-meshi.jpg'), icon: Utensils, mapUrl: 'https://maps.app.goo.gl/bjx8oGK2Gv2L4zoe8' },
+              { time: '20:00', type: 'hotel', title: '松山大和魯內飯店', sub: 'Check-in', img: '松山大和魯內', imgUrl: getWikiImage('Matsuyama_City_Station.jpg'), icon: Bed, mapUrl: 'https://maps.app.goo.gl/KbJXuTAp9eJrw72k6' },
             ]
           },
           {
@@ -179,12 +204,11 @@
             summary: '古城與千年溫泉',
             color: 'from-orange-500 to-amber-500',
             schedule: [
-              { time: '09:30', type: 'activity', title: '松山城', sub: '搭乘纜車/吊椅', img: '松山城', imgUrl: getWikiImage('Matsuyama_Castle_松山城_-_panoramio_(3).jpg'), note: '現存12天守之一', icon: Camera },
+              { time: '09:30', type: 'activity', title: '松山城', sub: '搭乘纜車/吊椅', img: '松山城', imgUrl: getWikiImage('Matsuyama_Castle_松山城_-_panoramio_(3).jpg'), note: '門票+纜車約¥1040', icon: Camera, mapUrl: 'https://maps.app.goo.gl/3P2gHwUMnScLdRvr7' },
               { time: '12:00', type: 'food', title: '松山鯛魚飯', sub: '午餐', img: '鯛魚飯', imgUrl: getWikiImage('Tai-meshi.jpg'), icon: Utensils },
-              { time: '14:00', type: 'activity', title: '道後溫泉本館', sub: '神隱少女場景', img: '道後溫泉', imgUrl: getWikiImage('Dogo-onsen_Honkan.jpg'), icon: MapPin },
-              { time: '15:30', type: 'activity', title: '道後商店街', sub: '少爺機關鐘', note: '購買愛媛橘子周邊', icon: MapPin },
-              { time: '18:00', type: 'food', title: '道後溫泉街晚餐', sub: '自由覓食', icon: Utensils },
-              { time: '20:00', type: 'hotel', title: '松山大和魯內飯店', sub: '整理行李', icon: Bed },
+              { time: '14:00', type: 'activity', title: '道後溫泉本館', sub: '神隱少女場景', img: '道後溫泉', imgUrl: getWikiImage('Dogo-onsen_Honkan.jpg'), icon: MapPin, mapUrl: 'https://maps.app.goo.gl/KyiqKEr22oCcY22t9' },
+              { time: '15:30', type: 'activity', title: '道後商店街', sub: '少爺機關鐘', note: '路面電車單程¥200', icon: MapPin },
+              { time: '20:00', type: 'hotel', title: '松山大和魯內飯店', sub: '整理行李', icon: Bed, mapUrl: 'https://maps.app.goo.gl/3stse2uwm1Kay97L9' },
             ]
           },
           {
@@ -197,12 +221,19 @@
             color: 'from-gray-500 to-gray-700',
             schedule: [
               { time: '08:30', type: 'hotel', title: 'Check-out', sub: '飯店退房', icon: Bed },
-              { time: '09:00', type: 'transport', title: '前往松山機場', sub: '還車', img: '松山機場', imgUrl: getWikiImage('Matsuyama_Airport_(MYJ)_2.jpg'), icon: Car },
+              { 
+                time: '09:00', type: 'transport', title: '前往松山機場', 
+                icon: Car, 
+                transport: { dist: '市區交通', time: '30分', cost: '利木津巴士約¥900' }
+              },
+              { time: '09:30', type: 'flight', title: '松山機場 (MYJ)', sub: '辦理登機', img: '松山機場', imgUrl: getWikiImage('Matsuyama_Airport_(MYJ)_2.jpg'), icon: Plane, mapUrl: 'https://maps.app.goo.gl/paqfDDdpDyWFEZ7K6' },
               { time: '11:20', type: 'flight', title: '飛往桃園', sub: 'EVA Air BR 109', icon: Plane },
               { time: '13:05', type: 'home', title: '抵達桃園機場', sub: '溫暖的家', icon: MapPin },
             ]
           },
         ];
+
+        // --- 元件區 ---
 
         const WeatherIcon = ({ condition, className }) => {
             if (condition === 'sunny') return <Sun className={`text-yellow-500 ${className}`} />;
@@ -233,7 +264,6 @@
             );
         };
 
-        // WMO 天氣代碼轉換
         const getWeatherCondition = (code) => {
           if (code === 0) return { condition: 'sunny', desc: '晴朗無雲' };
           if ([1, 2, 3].includes(code)) return { condition: 'cloudy', desc: '多雲' };
@@ -386,20 +416,58 @@
                         <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors duration-300
                           ${item.type === 'food' ? 'bg-orange-400' : 
                             item.type === 'hotel' ? 'bg-purple-500' : 
-                            item.type === 'transport' || item.type === 'flight' ? 'bg-blue-400' : 'bg-emerald-500'}`} 
+                            item.type === 'transport' || item.type === 'move' ? 'bg-blue-400' : 'bg-emerald-500'}`} 
                         />
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-start">
-                            <div>
+                            <div className="flex-1">
                               <span className="text-sm font-bold text-gray-400 font-mono">{item.time}</span>
-                              <h4 className="text-lg font-bold text-gray-800 leading-snug">{item.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className={`text-lg font-bold leading-snug ${item.mapUrl ? 'text-blue-700' : 'text-gray-800'}`}>
+                                  {item.mapUrl ? (
+                                    <a href={item.mapUrl} target="_blank" rel="noopener noreferrer" className="hover:underline decoration-blue-400 underline-offset-4">
+                                      {item.title}
+                                    </a>
+                                  ) : item.title}
+                                </h4>
+                                {item.mapUrl && (
+                                  <a href={item.mapUrl} target="_blank" rel="noopener noreferrer" className="bg-blue-100 text-blue-600 p-1 rounded-full hover:bg-blue-200 tap-active">
+                                    <Navigation className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-500 font-medium">{item.sub}</p>
                             </div>
                             <item.icon className={`w-5 h-5 opacity-40 ${item.type === 'food' ? 'text-orange-500' : 'text-gray-500'}`} />
                           </div>
+
+                          {/* 交通資訊卡片 */}
+                          {item.transport && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 flex flex-wrap gap-y-1 gap-x-3 mt-1 items-center">
+                                <div className="flex items-center gap-1">
+                                    <Navigation className="w-3 h-3 text-blue-500" /> 
+                                    <span>{item.transport.dist}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Timer className="w-3 h-3 text-orange-500" />
+                                    <span>{item.transport.time}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Banknote className="w-3 h-3 text-green-600" />
+                                    <span>{item.transport.cost}</span>
+                                </div>
+                            </div>
+                          )}
+
                           {item.img && (
                             <div className="mt-1">
-                              <RealImage src={item.imgUrl} alt={item.img} fallbackText={item.img} height="h-32" />
+                              {item.mapUrl ? (
+                                <a href={item.mapUrl} target="_blank" rel="noopener noreferrer" className="block tap-active">
+                                    <RealImage src={item.imgUrl} alt={item.img} fallbackText={item.img} height="h-32" />
+                                </a>
+                              ) : (
+                                <RealImage src={item.imgUrl} alt={item.img} fallbackText={item.img} height="h-32" />
+                              )}
                             </div>
                           )}
                           {item.note && (
